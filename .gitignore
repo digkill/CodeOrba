@@ -2,4 +2,5 @@
 .venv
 backend/.env
 frontend/node_modules
-backend/repo/
+backend/repo/*
+!backend/repo/.gitkeeper

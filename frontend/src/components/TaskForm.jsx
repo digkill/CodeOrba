@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { generateProject } from "../services/api"; // твой API-запрос на бэкенд
+import {useState} from "react";
+import {generateProject} from "../services/api"; // твой API-запрос на бэкенд
 
-export default function TaskForm({ onProjectGenerated }) {
+export default function TaskForm({onProjectGenerated}) {
     const [taskDescription, setTaskDescription] = useState("");
     const [language, setLanguage] = useState("JavaScript");
 
@@ -10,9 +10,10 @@ export default function TaskForm({ onProjectGenerated }) {
         if (!taskDescription.trim()) return;
 
         try {
-            const projectName = await generateProject(taskDescription, language);
-            onProjectGenerated(projectName);
+            const response = await generateProject({task_description: taskDescription, language});
+            onProjectGenerated(response.data.project_name); // <-- важно: вытаскиваем только нужное поле
             setTaskDescription("");
+
         } catch (error) {
             console.error("Error generating project:", error);
         }
@@ -21,7 +22,7 @@ export default function TaskForm({ onProjectGenerated }) {
     return (
         <form onSubmit={handleSubmit} className="bg-dark p-6 rounded-2xl shadow-orbital flex flex-col gap-4 w-full">
 
-            <h2 className="text-2xl font-bold text-white text-center mb-2">
+            <h2 className="text-2xl font-bold text-dark text-center mb-2">
                 Create a New Project
             </h2>
 
@@ -46,7 +47,7 @@ export default function TaskForm({ onProjectGenerated }) {
 
             <button
                 type="submit"
-                className="mt-4 px-6 py-3 bg-primary text-dark rounded-full font-bold text-lg shadow-orbital hover:bg-secondary hover:text-white transition"
+                className="mt-4 px-6 py-3 bg-blend-darken text-dark rounded-full font-bold text-lg shadow-orbital hover:bg-secondary hover:text-white transition"
             >
                 Generate Project
             </button>

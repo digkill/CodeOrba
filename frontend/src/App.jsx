@@ -13,12 +13,11 @@ export default function App() {
     return (
         <div className="relative bg-dark min-h-screen overflow-hidden flex flex-col items-center">
 
-            {/* Вращающаяся орбита */}
 
-  <img src={logo} alt="CodeOrba Logo" className="w-32   mb-6"/>
-            {/* Шапка */}
             <header className="w-full text-center p-8 z-10">
-                <h1 className="text-5xl font-sans font-bold text-white">
+
+                <img src={logo} alt="CodeOrba Logo" className="w-32 mb-6 m-auto"/>
+                <h1 className="text-5xl font-sans font-bold text-dark">
                     <span className="text-primary">Code</span><span className="text-secondary">Orba</span>
                 </h1>
                 <p className="text-gray-400 text-lg mt-4">
@@ -26,18 +25,18 @@ export default function App() {
                 </p>
             </header>
 
-            {/* Основной контент */}
+
             <main className="w-full max-w-3xl p-6 flex flex-col items-center gap-8 z-10">
 
-                {/* Форма создания проекта */}
+
                 <TaskForm onProjectGenerated={handleProjectGenerated}/>
 
-                {/* Список проектов */}
+
                 <ProjectList projects={projects}/>
 
             </main>
 
-            {/* Кнопка Get Started внизу */}
+
             <div className="mt-12 z-10">
                 <button
                     className="px-8 py-4 bg-primary text-dark rounded-full font-bold text-lg shadow-orbital hover:bg-secondary hover:text-white transition">

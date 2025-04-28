@@ -23,7 +23,8 @@ def save_code_to_git(code: str, language: str, commit_message: str) -> str:
     ext = {
         "python": "py",
         "javascript": "js",
-        "go": "go"
+        "go": "go",
+        "php": "php",
     }.get(language.lower(), "txt")
 
     filename = f"generated_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{ext}"

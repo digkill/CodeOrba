@@ -3,3 +3,6 @@ uvicorn
 openai
 gitpython
 python-dotenv
+git-py
+openai
+dotenv
