@@ -1,0 +1,5 @@
+.idea
+.venv
+backend/.env
+frontend/node_modules
+backend/repo/
