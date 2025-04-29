@@ -24,22 +24,30 @@ export default function MainEditor() {
     }
 
     localStorage.setItem("sandbox-files", JSON.stringify(normalizedFiles));
-    toast.success("✅ Project generated successfully!");
+    toast.success("✅ Проект успешно сгенерирован!");
   };
 
   const handleFileChange = (filename, newCode) => {
-    setFiles(prev => {
-      const updated = {
-        ...prev,
-        [filename]: newCode,
-      };
+    setFiles(prevFiles => {
+      const updated = { ...prevFiles, [filename]: newCode };
       localStorage.setItem("sandbox-files", JSON.stringify(updated));
       return updated;
     });
   };
 
+  const handleRunProject = () => {
+    if (Object.keys(files).length === 0) {
+      toast.error("😥 Нет файлов для запуска");
+      return;
+    }
+
+    const transformed = transformToReactViteProject(files);
+    localStorage.setItem("sandbox-files", JSON.stringify(transformed));
+    navigate("/sandbox");
+  };
+
   const generatePreviewHTML = () => {
-    const html = files["index.html"] || "<h1>index.html not found</h1>";
+    const html = files["index.html"] || "<h1>Файл index.html не найден</h1>";
     const css = files["style.css"] || "";
     const js = files["script.js"] || "";
 
@@ -72,29 +80,22 @@ export default function MainEditor() {
     `;
 
     return `
-      <html>
-        <head>
-          <style>${css}</style>
-        </head>
-        <body>
-          ${html}
-          ${libraries}
-          ${consoleScript}
-          <script>${js}</script>
-        </body>
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Preview</title>
+        <style>${css}</style>
+      </head>
+      <body>
+        ${html}
+        ${libraries}
+        ${consoleScript}
+        <script>${js}</script>
+      </body>
       </html>
     `;
-  };
-
-  const handleRunProject = () => {
-    if (!files || Object.keys(files).length === 0) {
-      alert("No files to run 😥");
-      return;
-    }
-
-    const transformed = transformToReactViteProject(files);
-    localStorage.setItem("sandbox-files", JSON.stringify(transformed));
-    navigate("/sandbox");
   };
 
   useEffect(() => {
@@ -102,10 +103,12 @@ export default function MainEditor() {
       const timeout = setTimeout(() => {
         const iframe = iframeRef.current;
         if (iframe) {
-          const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-          iframeDoc.open();
-          iframeDoc.write(generatePreviewHTML());
-          iframeDoc.close();
+          const doc = iframe.contentDocument || iframe.contentWindow?.document;
+          if (doc) {
+            doc.open();
+            doc.write(generatePreviewHTML());
+            doc.close();
+          }
         }
       }, 500);
       return () => clearTimeout(timeout);
@@ -113,17 +116,17 @@ export default function MainEditor() {
   }, [files]);
 
   useEffect(() => {
-    const handleMessage = (event) => {
-      if (event.data?.source === 'iframe') {
-        if (event.data.type === 'log') {
-          console.log('[Sandbox]', ...event.data.args);
-        } else if (event.data.type === 'error') {
-          console.error('[Sandbox Error]', ...event.data.args);
+    const handleMessage = event => {
+      if (event.data?.source === "iframe") {
+        if (event.data.type === "log") {
+          console.log("[Preview]", ...event.data.args);
+        } else if (event.data.type === "error") {
+          console.error("[Preview Error]", ...event.data.args);
         }
       }
     };
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
   }, []);
 
   return (
@@ -145,18 +148,16 @@ export default function MainEditor() {
               />
               <button
                 onClick={handleRunProject}
-                className="rounded-md bg-slate-800 py-2 px-4 border border-transparent text-center text-sm text-white transition-all shadow-md hover:shadow-lg focus:bg-slate-700 hover:bg-slate-700 active:bg-slate-700 active:shadow-none disabled:pointer-events-none disabled:opacity-50"
+                className="rounded-md bg-slate-800 py-2 px-4 text-sm text-white shadow-md hover:bg-slate-700 active:bg-slate-700 transition-all"
               >
-                🚀 Run in sandbox
+                🚀 Запустить в Sandbox
               </button>
-
-              {/* Локальный предпросмотр для простых HTML проектов */}
               <div className="mt-4 border rounded-xl overflow-hidden h-[500px]">
                 <iframe
                   ref={iframeRef}
                   className="w-full h-full bg-white"
                   sandbox="allow-scripts allow-same-origin"
-                  title="Sandbox Preview"
+                  title="Live Preview"
                 />
               </div>
             </>
@@ -168,11 +169,11 @@ export default function MainEditor() {
             <CodeEditor
               filename={activeFile}
               code={files[activeFile]}
-              onChange={(newCode) => handleFileChange(activeFile, newCode)}
+              onChange={newCode => handleFileChange(activeFile, newCode)}
             />
           ) : (
             <div className="h-full flex items-center justify-center text-gray-400">
-              📂 Select a file to edit
+              📂 Выберите файл для редактирования
             </div>
           )}
         </div>
