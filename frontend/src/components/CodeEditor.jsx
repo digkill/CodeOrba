@@ -6,6 +6,7 @@ import { css } from "@codemirror/lang-css";
 import { python } from "@codemirror/lang-python";
 import { php } from "@codemirror/lang-php";
 import { oneDark } from "@codemirror/theme-one-dark";
+import { highlightActiveLine } from "@codemirror/view";
 
 export default function CodeEditor({ filename, code, onChange }) {
   const [view, setView] = useState(null);
@@ -29,7 +30,7 @@ export default function CodeEditor({ filename, code, onChange }) {
 
     const editor = new EditorView({
       parent: document.getElementById("editor"),
-      extensions: [basicSetup, language, oneDark, EditorView.updateListener.of((update) => {
+      extensions: [basicSetup, highlightActiveLine(), language, oneDark, EditorView.updateListener.of((update) => {
         if (update.docChanged) {
           const newCode = update.state.doc.toString();
           onChange(newCode);
@@ -43,7 +44,11 @@ export default function CodeEditor({ filename, code, onChange }) {
   }, [filename]);
 
   return (
-    <div id="editor" className="h-[70vh] w-full rounded-xl overflow-hidden" />
+<div
+  id="editor"
+  className="h-[70vh] w-full rounded-xl overflow-auto border border-neutral-700"
+  style={{ fontSize: "14px" }}
+/>
   );
 }
 

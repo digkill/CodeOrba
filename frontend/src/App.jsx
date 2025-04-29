@@ -1,114 +1,122 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import TaskForm from "./components/TaskForm";
 import CodeEditor from "./components/CodeEditor";
 import FileList from "./components/FileList";
 import { Toaster, toast } from "react-hot-toast";
+import { WebContainer } from "@webcontainer/api";
 
 export default function App() {
-  const [projectId, setProjectId] = useState(null);
   const [files, setFiles] = useState({});
   const [activeFile, setActiveFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [webcontainer, setWebcontainer] = useState(null);
+  const [status, setStatus] = useState("Ready");
 
-  // Обработка успешной генерации проекта
-  const handleProjectGenerated = ({ project_name, files }) => {
-    setProjectId(project_name);
-    setFiles(files);
+  const iframeRef = useRef(null);
 
-    const firstFile = Object.keys(files)[0];
-    if (firstFile) {
-      setActiveFile(firstFile);
+  // Автоматически стартуем WebContainer при генерации проекта
+  const handleProjectGenerated = async ({ files }) => {
+    const normalizedFiles = Array.isArray(files)
+      ? Object.fromEntries(files.map(file => [file.filename, file.content]))
+      : files;
+
+    setFiles(normalizedFiles);
+
+    const firstFile = Object.keys(normalizedFiles)[0];
+    if (firstFile) setActiveFile(firstFile);
+
+    toast.success("✅ Project generated successfully!");
+
+    setStatus("🚀 Booting WebContainer...");
+    const instance = await WebContainer.boot();
+    setWebcontainer(instance);
+
+    setStatus("📦 Mounting project files...");
+    const structured = {};
+    for (const [filename, content] of Object.entries(normalizedFiles)) {
+      if (filename.includes("/")) {
+        const [dir, name] = filename.split("/");
+        if (!structured[dir]) structured[dir] = { directory: {} };
+        structured[dir].directory[name] = { file: { contents: content } };
+      } else {
+        structured[filename] = { file: { contents: content } };
+      }
     }
+    await instance.mount(structured);
 
-    toast.success("✅ Проект успешно сгенерирован!");
-  };
+    setStatus("📥 Installing dependencies...");
+    const install = await instance.spawn("npm", ["install"]);
+    install.output.pipeTo(new WritableStream({
+      write(data) {
+        console.log("[npm]", new TextDecoder().decode(data));
+      }
+    }));
+    await install.exit;
 
-  // Обработка изменений кода в файле
-  const handleFileChange = (filename, newCode) => {
-    setFiles((prev) => ({
-      ...prev,
-      [filename]: newCode,
+    setStatus("⚡ Starting dev server...");
+    const server = await instance.spawn("npm", ["run", "dev"]);
+    server.output.pipeTo(new WritableStream({
+      write(data) {
+        const text = new TextDecoder().decode(data);
+        console.log("[vite]", text);
+        const match = text.match(/http:\/\/localhost:\d+/);
+        if (match) {
+          const url = match[0].replace("localhost", instance.url.hostname);
+          setPreviewUrl(url);
+          setStatus("✅ Dev server running");
+        }
+      }
     }));
   };
 
-  // Запуск проекта в новой вкладке
-  const handleRunProject = () => {
-    if (!files || Object.keys(files).length === 0) {
-      alert("Нет файлов для запуска 😥");
-      return;
-    }
-
-    const htmlFileName = Object.keys(files).find(name => name.endsWith(".html"));
-    if (!htmlFileName) {
-      alert("Файл index.html не найден 😥");
-      return;
-    }
-
-    let finalHTML = files[htmlFileName];
-
-    // Вставляем CSS стили
-    Object.keys(files).forEach(filename => {
-      if (filename.endsWith(".css")) {
-        const styleTag = `<style>\n${files[filename]}\n</style>`;
-        finalHTML = finalHTML.replace("</head>", `${styleTag}\n</head>`);
-      }
-    });
-
-    // Вставляем JS скрипты
-    Object.keys(files).forEach(filename => {
-      if (filename.endsWith(".js")) {
-        const scriptTag = `<script>\n${files[filename]}\n</script>`;
-        finalHTML = finalHTML.replace("</body>", `${scriptTag}\n</body>`);
-      }
-    });
-
-    const previewWindow = window.open("", "_blank");
-    if (previewWindow) {
-      previewWindow.document.open();
-      previewWindow.document.write(finalHTML);
-      previewWindow.document.close();
-    } else {
-      alert("Не удалось открыть окно 😥 Проверьте настройки браузера!");
-    }
+  const handleFileChange = (filename, newCode) => {
+    setFiles(prev => ({
+      ...prev,
+      [filename]: newCode
+    }));
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-dark text-white">
       <Toaster position="top-center" />
 
-      {/* Хедер */}
+      {/* Header */}
       <header className="bg-gray-900 p-6 text-center text-3xl font-extrabold shadow-md">
         CodeOrba 🛸 — AI Dev Sandbox
       </header>
 
-      {/* Основная часть */}
+      {/* Main content */}
       <main className="flex-1 flex flex-col md:flex-row p-4 gap-6">
-
-        {/* Левая колонка */}
+        {/* Left column */}
         <div className="w-full md:w-1/3 flex flex-col gap-4">
-          {!projectId ? (
+          {Object.keys(files).length === 0 ? (
             <TaskForm onProjectGenerated={handleProjectGenerated} />
           ) : (
             <>
-              {/* Список файлов */}
               <FileList
                 files={files}
                 activeFile={activeFile}
                 setActiveFile={setActiveFile}
               />
 
-              {/* Кнопка запуска */}
-              <button
-                onClick={handleRunProject}
-                className="bg-primary text-dark px-6 py-3 rounded-full shadow-glow-primary hover:animate-glowPulse"
-              >
-                🚀 Запустить в песочнице
-                <span className="absolute inset-0 bg-white opacity-10 blur-md"></span>
-              </button>
+              <div className="mt-4 border rounded-xl overflow-hidden h-[500px]">
+                {previewUrl ? (
+                  <iframe
+                    ref={iframeRef}
+                    src={previewUrl}
+                    className="w-full h-full bg-white"
+                    sandbox="allow-scripts allow-same-origin"
+                    title="Sandbox Preview"
+                  />
+                ) : (
+                  <div className="text-center text-sm text-gray-400 p-4">{status}</div>
+                )}
+              </div>
             </>
           )}
         </div>
 
-        {/* Правая колонка */}
+        {/* Right column */}
         <div className="w-full md:w-2/3 bg-gray-900 rounded-xl shadow-inner p-4">
           {activeFile ? (
             <CodeEditor
@@ -118,7 +126,7 @@ export default function App() {
             />
           ) : (
             <div className="h-full flex items-center justify-center text-gray-400">
-              📂 Выберите файл для редактирования
+              📂 Select a file to edit
             </div>
           )}
         </div>
