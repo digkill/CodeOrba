@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from pydantic import BaseModel
 
 class CodeRequest(BaseModel):
     task_description: str
@@ -8,8 +9,6 @@ class CodeRequest(BaseModel):
 class CodeResponse(BaseModel):
     code: str
     file_path: str
-
-from pydantic import BaseModel
 
 class ProjectRequest(BaseModel):
     task_description: str

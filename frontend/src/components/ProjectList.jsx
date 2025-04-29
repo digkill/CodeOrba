@@ -19,9 +19,9 @@ export default function ProjectList({ projects }) {
                         key={index}
                         className="bg-gray-900 rounded-xl p-4 flex justify-between items-center text-white shadow hover:shadow-orbital transition"
                     >
-                        <span>{project}</span>
+                        <span className="truncate">{project}</span>
                         <a
-                            href={`/${project}`}
+                            href={`/projects/${project}`} // Здесь ссылка на страницу проекта
                             className="text-primary hover:text-secondary font-semibold"
                         >
                             View →

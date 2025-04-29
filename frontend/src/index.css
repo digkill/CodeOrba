@@ -1,1 +1,69 @@
 @import "tailwindcss";
+
+.loader {
+  border: 3px solid transparent;
+  border-top: 3px solid #06b6d4; /* Бирюзовый */
+  border-right: 3px solid #8b5cf6; /* Фиолетовый */
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 0.8s linear infinite;
+}
+
+.loader.small {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes spark {
+  0% {
+    transform: scale(0) translate(0, 0);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.5) translate(50px, -50px);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(0) translate(100px, -100px);
+    opacity: 0;
+  }
+}
+
+.animate-spark {
+  animation: spark 1s ease-out infinite;
+}
+.delay-200 { animation-delay: 0.2s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-600 { animation-delay: 0.6s; }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease;
+}
+
+@keyframes star {
+  0% { transform: translateY(0) scale(1); opacity: 0.8; }
+  50% { transform: translateY(-10px) scale(1.2); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 0.8; }
+}
+
+.animate-star {
+  animation: star 4s ease-in-out infinite;
+}
+
+.delay-200 { animation-delay: 0.2s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-600 { animation-delay: 0.6s; }

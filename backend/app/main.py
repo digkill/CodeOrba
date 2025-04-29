@@ -1,10 +1,7 @@
-from fastapi import FastAPI
-from app.agent_code import generate_code
-from app.git_manager import save_code_to_git
+from fastapi import FastAPI, HTTPException
 from app.models import CodeRequest, CodeResponse, ProjectRequest, ProjectResponse
 from app.agent import generate_project
-
-
+from app.project_manager import save_project_files, load_project
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 import glob
@@ -27,17 +24,16 @@ def read_root():
     return {"message": "Dev Agent is alive!"}
 
 
-@app.post("/generate", response_model=CodeResponse)
-async def generate_code_endpoint(request: CodeRequest):
-    code = generate_code(request.task_description, request.language)
-    file_path = save_code_to_git(code, request.language, request.commit_message)
-    return CodeResponse(code=code, file_path=file_path)
-
-
-@app.post("/generate_project", response_model=ProjectResponse)
+@app.post("/generate_project")
 async def generate_project_endpoint(request: ProjectRequest):
-    project_name = generate_project(request.task_description, request.language)
-    return ProjectResponse(project_name=project_name)
+    try:
+        project_name, generated_code = generate_project(request.task_description, request.language)
+        return {
+            "project_name": project_name,
+            "generated_code": generated_code
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
 
 @app.get("/files")
@@ -52,3 +48,19 @@ async def download_file(filename: str):
     if os.path.exists(file_path):
         return FileResponse(path=file_path, filename=filename, media_type='application/octet-stream')
     return {"error": "File not found"}
+
+@app.post("/generate_project")
+async def generate_project_endpoint(request: ProjectRequest):
+    try:
+        project_id = generate_project(request.task_description, request.language)
+        return {"project_id": project_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/sandbox/{project_id}")
+async def get_project(project_id: str):
+    project = load_project(project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    return project

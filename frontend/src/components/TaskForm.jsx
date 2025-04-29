@@ -1,28 +1,36 @@
 import {useState} from "react";
-import {generateProject} from "../services/api"; // твой API-запрос на бэкенд
+import {generateProject} from "../api/api";
+import {parseGeneratedCode} from "../utils/parser.jsx"; // твой API для генерации проекта
 
 export default function TaskForm({onProjectGenerated}) {
     const [taskDescription, setTaskDescription] = useState("");
     const [language, setLanguage] = useState("JavaScript");
+    const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!taskDescription.trim()) return;
 
         try {
-            const response = await generateProject({task_description: taskDescription, language});
-            onProjectGenerated(response.data.project_name); // <-- важно: вытаскиваем только нужное поле
-            setTaskDescription("");
+            setLoading(true);
+            const response = await generateProject(taskDescription, language);
+            const parsedFiles = parseGeneratedCode(response.generated_code);
 
+            onProjectGenerated({
+                projectName: response.project_name,
+                files: parsedFiles,
+            });
+            setTaskDescription("");
         } catch (error) {
             console.error("Error generating project:", error);
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
         <form onSubmit={handleSubmit} className="bg-dark p-6 rounded-2xl shadow-orbital flex flex-col gap-4 w-full">
-
-            <h2 className="text-2xl font-bold text-dark text-center mb-2">
+            <h2 className="text-2xl font-bold text-white text-center mb-2">
                 Create a New Project
             </h2>
 
@@ -47,9 +55,10 @@ export default function TaskForm({onProjectGenerated}) {
 
             <button
                 type="submit"
-                className="mt-4 px-6 py-3 bg-blend-darken text-dark rounded-full font-bold text-lg shadow-orbital hover:bg-secondary hover:text-white transition"
+                disabled={loading}
+                className="ounded-md bg-slate-800 py-2 px-4 border border-transparent text-center text-sm text-white transition-all shadow-md hover:shadow-lg focus:bg-slate-700 focus:shadow-none active:bg-slate-700 hover:bg-slate-700 active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
             >
-                Generate Project
+                {loading ? "Generating..." : "Generate Project"}
             </button>
 
         </form>

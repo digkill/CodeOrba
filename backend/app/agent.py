@@ -7,7 +7,7 @@ load_dotenv()
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-def generate_project(task_description: str, language: str) -> str:
+def generate_project(task_description: str, language: str) -> tuple[str, str]:
     prompt = (
         f"You are a professional {language} developer. "
         f"Create a full project for this task:\n\n"
@@ -29,4 +29,4 @@ def generate_project(task_description: str, language: str) -> str:
 
     content = response.choices[0].message.content
     project_name = save_project_files(content)
-    return project_name
+    return project_name, content

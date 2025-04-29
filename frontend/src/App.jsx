@@ -1,48 +1,128 @@
-import {useState} from "react";
+import { useState } from "react";
 import TaskForm from "./components/TaskForm";
-import ProjectList from "./components/ProjectList";
-import logo from './assets/logo-ligth.png';
+import CodeEditor from "./components/CodeEditor";
+import FileList from "./components/FileList";
+import { Toaster, toast } from "react-hot-toast";
 
 export default function App() {
-    const [projects, setProjects] = useState([]);
+  const [projectId, setProjectId] = useState(null);
+  const [files, setFiles] = useState({});
+  const [activeFile, setActiveFile] = useState(null);
 
-    const handleProjectGenerated = (projectName) => {
-        setProjects((prev) => [...prev, projectName]);
-    };
+  // Обработка успешной генерации проекта
+  const handleProjectGenerated = ({ project_name, files }) => {
+    setProjectId(project_name);
+    setFiles(files);
 
-    return (
-        <div className="relative bg-dark min-h-screen overflow-hidden flex flex-col items-center">
+    const firstFile = Object.keys(files)[0];
+    if (firstFile) {
+      setActiveFile(firstFile);
+    }
 
+    toast.success("✅ Проект успешно сгенерирован!");
+  };
 
-            <header className="w-full text-center p-8 z-10">
+  // Обработка изменений кода в файле
+  const handleFileChange = (filename, newCode) => {
+    setFiles((prev) => ({
+      ...prev,
+      [filename]: newCode,
+    }));
+  };
 
-                <img src={logo} alt="CodeOrba Logo" className="w-32 mb-6 m-auto"/>
-                <h1 className="text-5xl font-sans font-bold text-dark">
-                    <span className="text-primary">Code</span><span className="text-secondary">Orba</span>
-                </h1>
-                <p className="text-gray-400 text-lg mt-4">
-                    Your AI-powered orbit for crafting and building projects effortlessly.
-                </p>
-            </header>
+  // Запуск проекта в новой вкладке
+  const handleRunProject = () => {
+    if (!files || Object.keys(files).length === 0) {
+      alert("Нет файлов для запуска 😥");
+      return;
+    }
 
+    const htmlFileName = Object.keys(files).find(name => name.endsWith(".html"));
+    if (!htmlFileName) {
+      alert("Файл index.html не найден 😥");
+      return;
+    }
 
-            <main className="w-full max-w-3xl p-6 flex flex-col items-center gap-8 z-10">
+    let finalHTML = files[htmlFileName];
 
+    // Вставляем CSS стили
+    Object.keys(files).forEach(filename => {
+      if (filename.endsWith(".css")) {
+        const styleTag = `<style>\n${files[filename]}\n</style>`;
+        finalHTML = finalHTML.replace("</head>", `${styleTag}\n</head>`);
+      }
+    });
 
-                <TaskForm onProjectGenerated={handleProjectGenerated}/>
+    // Вставляем JS скрипты
+    Object.keys(files).forEach(filename => {
+      if (filename.endsWith(".js")) {
+        const scriptTag = `<script>\n${files[filename]}\n</script>`;
+        finalHTML = finalHTML.replace("</body>", `${scriptTag}\n</body>`);
+      }
+    });
 
+    const previewWindow = window.open("", "_blank");
+    if (previewWindow) {
+      previewWindow.document.open();
+      previewWindow.document.write(finalHTML);
+      previewWindow.document.close();
+    } else {
+      alert("Не удалось открыть окно 😥 Проверьте настройки браузера!");
+    }
+  };
 
-                <ProjectList projects={projects}/>
+  return (
+    <div className="min-h-screen flex flex-col bg-dark text-white">
+      <Toaster position="top-center" />
 
-            </main>
+      {/* Хедер */}
+      <header className="bg-gray-900 p-6 text-center text-3xl font-extrabold shadow-md">
+        CodeOrba 🛸 — AI Dev Sandbox
+      </header>
 
+      {/* Основная часть */}
+      <main className="flex-1 flex flex-col md:flex-row p-4 gap-6">
 
-            <div className="mt-12 z-10">
-                <button
-                    className="px-8 py-4 bg-primary text-dark rounded-full font-bold text-lg shadow-orbital hover:bg-secondary hover:text-white transition">
-                    Get Started
-                </button>
-            </div>
+        {/* Левая колонка */}
+        <div className="w-full md:w-1/3 flex flex-col gap-4">
+          {!projectId ? (
+            <TaskForm onProjectGenerated={handleProjectGenerated} />
+          ) : (
+            <>
+              {/* Список файлов */}
+              <FileList
+                files={files}
+                activeFile={activeFile}
+                setActiveFile={setActiveFile}
+              />
+
+              {/* Кнопка запуска */}
+              <button
+                onClick={handleRunProject}
+                className="bg-primary text-dark px-6 py-3 rounded-full shadow-glow-primary hover:animate-glowPulse"
+              >
+                🚀 Запустить в песочнице
+                <span className="absolute inset-0 bg-white opacity-10 blur-md"></span>
+              </button>
+            </>
+          )}
         </div>
-    );
+
+        {/* Правая колонка */}
+        <div className="w-full md:w-2/3 bg-gray-900 rounded-xl shadow-inner p-4">
+          {activeFile ? (
+            <CodeEditor
+              filename={activeFile}
+              code={files[activeFile]}
+              onChange={(newCode) => handleFileChange(activeFile, newCode)}
+            />
+          ) : (
+            <div className="h-full flex items-center justify-center text-gray-400">
+              📂 Выберите файл для редактирования
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+  );
 }

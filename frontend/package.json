@@ -12,11 +12,22 @@
     "reset": "rm -rf node_modules package-lock.json && npm cache clean --force && npm install"
   },
   "dependencies": {
+    "@codemirror/lang-css": "^6.3.1",
+    "@codemirror/lang-html": "^6.4.9",
+    "@codemirror/lang-javascript": "^6.2.3",
+    "@codemirror/lang-json": "^6.0.1",
+    "@codemirror/lang-php": "^6.0.1",
+    "@codemirror/lang-python": "^6.2.0",
+    "@material-tailwind/react": "^2.1.10",
     "@tailwindcss/cli": "^4.1.4",
     "@tailwindcss/vite": "^4.1.4",
+    "@uiw/codemirror-theme-dracula": "^4.23.11",
+    "@uiw/codemirror-theme-github": "^4.23.11",
+    "@uiw/react-codemirror": "^4.23.11",
     "axios": "^1.9.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-hot-toast": "^2.5.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",
